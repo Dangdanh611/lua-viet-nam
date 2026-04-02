@@ -1,0 +1,1443 @@
+<!-- ==========================================
+     TRANSLATE WIDGET - Dịch Ngôn Ngữ Popup
+     Thêm đoạn code này vào trước thẻ </body>
+     ========================================== -->
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+  #tw-root * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* --- Floating Button --- */
+  #tw-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 99999;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #1a73e8, #0d47a1);
+    box-shadow: 0 4px 20px rgba(26,115,232,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
+    outline: none;
+  }
+  #tw-fab:hover {
+    transform: scale(1.1) rotate(-5deg);
+    box-shadow: 0 6px 28px rgba(26,115,232,0.6);
+  }
+  #tw-fab svg { width: 26px; height: 26px; fill: #fff; transition: transform 0.3s; }
+  #tw-fab.active { background: linear-gradient(135deg, #0d47a1, #1a73e8); }
+  #tw-fab.active svg { transform: rotate(180deg); }
+
+  /* Pulse ring */
+  #tw-fab::after {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(26,115,232,0.5);
+    animation: tw-pulse 2s ease-out infinite;
+  }
+  @keyframes tw-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+
+  /* --- Popup Panel --- */
+  #tw-panel {
+    position: fixed;
+    bottom: 96px;
+    right: 28px;
+    z-index: 99998;
+    width: 340px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 1.5px 6px rgba(0,0,0,0.08);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
+    transform: scale(0.85) translateY(20px);
+    transform-origin: bottom right;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.25s ease;
+  }
+  #tw-panel.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Header */
+  #tw-header {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    padding: 18px 20px 14px;
+    color: #fff;
+  }
+  #tw-header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  #tw-header-top svg { width: 22px; height: 22px; fill: rgba(255,255,255,0.9); flex-shrink: 0; }
+  #tw-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: #fff;
+  }
+  #tw-subtitle {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.72);
+    padding-left: 32px;
+    line-height: 1.4;
+  }
+
+  /* Body */
+  #tw-body { padding: 16px 18px 18px; }
+
+  /* Lang row */
+  .tw-lang-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tw-lang-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tw-lang-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #9aa0a6;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .tw-lang-select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #202124;
+    background: #f8f9fa;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='%239aa0a6'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  .tw-lang-select:focus { border-color: #1a73e8; background: #fff; }
+
+  /* Swap button */
+  #tw-swap {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid #e0e0e0;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 18px;
+    transition: background 0.2s, border-color 0.2s, transform 0.3s;
+    outline: none;
+  }
+  #tw-swap:hover { background: #e8f0fe; border-color: #1a73e8; transform: rotate(180deg); }
+  #tw-swap svg { width: 16px; height: 16px; fill: #5f6368; }
+  #tw-swap:hover svg { fill: #1a73e8; }
+
+  /* Translate button */
+  #tw-translate-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #1a73e8, #1557b0);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s, transform 0.15s;
+    outline: none;
+    letter-spacing: -0.1px;
+  }
+  #tw-translate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  #tw-translate-btn:active { transform: translateY(0); opacity: 1; }
+  #tw-translate-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+  /* Status bar */
+  #tw-status {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  #tw-status.info { background: #e8f0fe; color: #1a73e8; display: flex; }
+  #tw-status.success { background: #e6f4ea; color: #137333; display: flex; }
+  #tw-status.error { background: #fce8e6; color: #c5221f; display: flex; }
+  #tw-status.loading { background: #f1f3f4; color: #5f6368; display: flex; }
+
+  /* Restore button */
+  #tw-restore-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 9px;
+    background: transparent;
+    color: #5f6368;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    outline: none;
+  }
+  #tw-restore-btn:hover { background: #f1f3f4; border-color: #bdc1c6; color: #202124; }
+  #tw-restore-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+  /* Spinner */
+  .tw-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(26,115,232,0.3);
+    border-top-color: #1a73e8;
+    border-radius: 50%;
+    animation: tw-spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes tw-spin { to { transform: rotate(360deg); } }
+
+  /* Divider */
+  .tw-divider {
+    height: 1px;
+    background: #f1f3f4;
+    margin: 14px 0;
+  }
+
+  /* Footer */
+  #tw-footer {
+    padding: 0 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: #9aa0a6;
+    font-size: 11px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  #tw-footer svg { width: 13px; height: 13px; fill: #9aa0a6; }
+
+  /* Dark overlay on mobile */
+  @media (max-width: 400px) {
+    #tw-panel { width: calc(100vw - 32px); right: 16px; bottom: 84px; }
+    #tw-fab { right: 16px; bottom: 16px; }
+  }
+</style>
+
+<div id="tw-root">
+  <!-- FAB Button -->
+  <button id="tw-fab" title="Dịch trang">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+    </svg>
+  </button>
+
+  <!-- Popup Panel -->
+  <div id="tw-panel">
+    <!-- Header -->
+    <div id="tw-header">
+      <div id="tw-header-top">
+        <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+        <span id="tw-title">Dịch Trang</span>
+      </div>
+      <div id="tw-subtitle">Dịch nội dung trang sang ngôn ngữ khác</div>
+    </div>
+
+    <!-- Body -->
+    <div id="tw-body">
+      <div class="tw-lang-row">
+        <div class="tw-lang-box">
+          <span class="tw-lang-label">Ngôn ngữ gốc</span>
+          <select class="tw-lang-select" id="tw-src-lang">
+            <option value="auto">🌐 Tự động nhận diện</option>
+            <option value="vi" selected>🇻🇳 Tiếng Việt</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="zh-CN">🇨🇳 中文 (Giản thể)</option>
+            <option value="zh-TW">🇹🇼 中文 (Phồn thể)</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="pt">🇵🇹 Português</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="ar">🇸🇦 العربية</option>
+            <option value="th">🇹🇭 ภาษาไทย</option>
+            <option value="id">🇮🇩 Bahasa Indonesia</option>
+          </select>
+        </div>
+
+        <button id="tw-swap" title="Hoán đổi ngôn ngữ">
+          <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        </button>
+
+        <div class="tw-lang-box">
+          <span class="tw-lang-label">Dịch sang</span>
+          <select class="tw-lang-select" id="tw-dest-lang">
+            <option value="en" selected>🇺🇸 English</option>
+            <option value="vi">🇻🇳 Tiếng Việt</option>
+            <option value="zh-CN">🇨🇳 中文 (Giản thể)</option>
+            <option value="zh-TW">🇹🇼 中文 (Phồn thể)</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="pt">🇵🇹 Português</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="ar">🇸🇦 العربية</option>
+            <option value="th">🇹🇭 ภาษาไทย</option>
+            <option value="id">🇮🇩 Bahasa Indonesia</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="tw-translate-btn">
+        <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+        Dịch trang ngay
+      </button>
+
+      <div id="tw-status"></div>
+
+      <button id="tw-restore-btn">
+        <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
+        Khôi phục bản gốc
+      </button>
+    </div>
+
+    <div class="tw-divider"></div>
+
+    <div id="tw-footer">
+      <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 0 1 5.08 16zm2.95-8H5.08a7.987 7.987 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+      Hỗ trợ bởi Google Translate
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const fab = document.getElementById('tw-fab');
+  const panel = document.getElementById('tw-panel');
+  const translateBtn = document.getElementById('tw-translate-btn');
+  const restoreBtn = document.getElementById('tw-restore-btn');
+  const statusEl = document.getElementById('tw-status');
+  const srcLang = document.getElementById('tw-src-lang');
+  const destLang = document.getElementById('tw-dest-lang');
+  const swapBtn = document.getElementById('tw-swap');
+
+  let isTranslated = false;
+  let originalTexts = []; // { node, original }
+  let isLoading = false;
+
+  // === Toggle panel ===
+  fab.addEventListener('click', () => {
+    const isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open');
+    fab.classList.toggle('active');
+    if (!isOpen) setStatus('info', '🌐 Chọn ngôn ngữ và nhấn Dịch trang ngay');
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('tw-root').contains(e.target)) {
+      panel.classList.remove('open');
+      fab.classList.remove('active');
+    }
+  });
+
+  // === Swap languages ===
+  swapBtn.addEventListener('click', () => {
+    const s = srcLang.value === 'auto' ? destLang.value : srcLang.value;
+    const d = srcLang.value === 'auto' ? 'vi' : destLang.value;
+    // Only swap if src is not auto
+    if (srcLang.value !== 'auto') {
+      const tmp = srcLang.value;
+      srcLang.value = destLang.value;
+      destLang.value = tmp;
+    }
+  });
+
+  // === Status helper ===
+  function setStatus(type, msg, spinner = false) {
+    statusEl.className = 'tw-status ' + type;
+    statusEl.innerHTML = spinner
+      ? `<div class="tw-spinner"></div><span>${msg}</span>`
+      : `<span>${msg}</span>`;
+    statusEl.style.display = 'flex';
+  }
+  function hideStatus() { statusEl.style.display = 'none'; }
+
+  // === Get all visible text nodes ===
+  function getTextNodes(root) {
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          const tag = parent.tagName.toUpperCase();
+          // Skip script, style, noscript, tw-root
+          if (['SCRIPT','STYLE','NOSCRIPT','TEXTAREA','INPUT'].includes(tag)) return NodeFilter.FILTER_REJECT;
+          if (parent.closest('#tw-root')) return NodeFilter.FILTER_REJECT;
+          if (node.textContent.trim().length < 2) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    return nodes;
+  }
+
+  // === Chunk array ===
+  function chunk(arr, size) {
+    const res = [];
+    for (let i = 0; i < arr.length; i += size) res.push(arr.slice(i, i + size));
+    return res;
+  }
+
+  // === Translate a batch of texts via Google Translate (no key needed) ===
+  async function translateTexts(texts, src, dest) {
+    const joined = texts.join('\n\n||||\n\n');
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${dest}&dt=t&q=${encodeURIComponent(joined)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Lỗi kết nối API dịch');
+    const data = await res.json();
+    // Parse result
+    const translated = data[0].map(item => item[0]).join('');
+    return translated.split('\n\n||||\n\n');
+  }
+
+  // === Main translate ===
+  translateBtn.addEventListener('click', async () => {
+    if (isLoading) return;
+
+    const dest = destLang.value;
+    const src = srcLang.value;
+
+    if (src !== 'auto' && src === dest) {
+      setStatus('error', '⚠️ Ngôn ngữ gốc và đích không được giống nhau!');
+      return;
+    }
+
+    // Restore if already translated
+    if (isTranslated) restoreOriginal();
+
+    isLoading = true;
+    translateBtn.disabled = true;
+    setStatus('loading', 'Đang thu thập nội dung...', true);
+
+    try {
+      const textNodes = getTextNodes(document.body);
+      if (textNodes.length === 0) throw new Error('Không tìm thấy nội dung để dịch');
+
+      originalTexts = textNodes.map(n => ({ node: n, original: n.textContent }));
+      const texts = originalTexts.map(t => t.original.trim());
+
+      setStatus('loading', `Đang dịch ${texts.length} đoạn văn...`, true);
+
+      // Batch: 40 texts per request
+      const batches = chunk(texts, 40);
+      const results = [];
+
+      for (let i = 0; i < batches.length; i++) {
+        setStatus('loading', `Dịch batch ${i+1}/${batches.length}...`, true);
+        const translated = await translateTexts(batches[i], src, dest);
+        results.push(...translated);
+        if (i < batches.length - 1) await new Promise(r => setTimeout(r, 300));
+      }
+
+      // Apply translations
+      originalTexts.forEach((item, idx) => {
+        if (results[idx] !== undefined) {
+          item.node.textContent = results[idx];
+        }
+      });
+
+      isTranslated = true;
+      const destName = destLang.options[destLang.selectedIndex].text.replace(/^[^\s]+\s/, '');
+      setStatus('success', `✅ Đã dịch sang ${destName} thành công!`);
+      restoreBtn.style.display = 'flex';
+
+    } catch (err) {
+      console.error('Translate error:', err);
+      setStatus('error', `❌ ${err.message || 'Lỗi không xác định. Vui lòng thử lại.'}`);
+      restoreOriginal();
+    } finally {
+      isLoading = false;
+      translateBtn.disabled = false;
+    }
+  });
+
+  // === Restore ===
+  function restoreOriginal() {
+    originalTexts.forEach(({ node, original }) => {
+      try { node.textContent = original; } catch(e) {}
+    });
+    originalTexts = [];
+    isTranslated = false;
+    restoreBtn.style.display = 'none';
+  }
+
+  restoreBtn.addEventListener('click', () => {
+    restoreOriginal();
+    setStatus('info', '🔄 Đã khôi phục nội dung gốc');
+  });
+
+})();
+</script>
+<!-- ========================================== --><!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lúa & Hành Trình Trồng Lúa Tại Việt Nam</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:       #C8973A;
+      --gold-light: #E8C06A;
+      --green-dark: #2D4A1E;
+      --green-mid:  #4A7A30;
+      --green-light:#7DB85A;
+      --cream:      #FAF6EE;
+      --parchment:  #F0E8D5;
+      --brown:      #5C3D1E;
+      --ink:        #1A1A14;
+      --muted:      #6B6050;
+      --divider:    rgba(200,151,58,0.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Lora', Georgia, serif;
+      font-size: 17px;
+      line-height: 1.85;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 1000; opacity: .45;
+    }
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--green-dark), var(--gold));
+      z-index: 999; width: 0%; transition: width .1s linear;
+    }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,246,238,.93);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--divider);
+      padding: 0 clamp(1.5rem, 5vw, 5rem);
+      display: flex; align-items: center; justify-content: space-between;
+      height: 58px;
+    }
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem; font-weight: 700;
+      color: var(--green-dark); letter-spacing: .04em;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-brand span { font-size: 1.3rem; }
+    .nav-links { display: flex; gap: 1.8rem; list-style: none; }
+    .nav-links a {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .78rem; font-weight: 500;
+      text-decoration: none; color: var(--muted);
+      letter-spacing: .08em; text-transform: uppercase;
+      transition: color .25s;
+    }
+    .nav-links a:hover { color: var(--green-dark); }
+
+    /* HERO */
+    .hero {
+      position: relative; min-height: 92vh;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(160deg, var(--green-dark) 0%, #1a3012 45%, #3d5c25 100%);
+      overflow: hidden;
+    }
+    .hero-pattern {
+      position: absolute; inset: 0; opacity: .12;
+      background-image:
+        repeating-linear-gradient(60deg, transparent, transparent 28px, rgba(255,255,255,.08) 28px, rgba(255,255,255,.08) 30px),
+        repeating-linear-gradient(-60deg, transparent, transparent 28px, rgba(255,255,255,.08) 28px, rgba(255,255,255,.08) 30px);
+    }
+    .rice-bg {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 38%; display: flex; align-items: flex-end; overflow: hidden; opacity: .2;
+    }
+    .stalk { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; }
+    .stalk::before {
+      content: ''; display: block; width: 2px;
+      background: linear-gradient(to top, var(--green-light), transparent);
+      animation: sway 3s ease-in-out infinite alternate;
+      transform-origin: bottom center;
+    }
+    .stalk:nth-child(odd)::before  { height: 80px; animation-delay: 0s; }
+    .stalk:nth-child(even)::before { height: 110px; animation-delay: .6s; }
+    .stalk:nth-child(3n)::before   { height: 65px; animation-delay: 1.2s; }
+    @keyframes sway { from{transform:rotate(-6deg)} to{transform:rotate(6deg)} }
+
+    .hero-inner {
+      position: relative; z-index: 2; text-align: center;
+      padding: 4rem clamp(1.5rem, 6vw, 8rem); max-width: 900px;
+    }
+    .hero-eyebrow {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .72rem; font-weight: 600;
+      letter-spacing: .22em; text-transform: uppercase;
+      color: var(--gold-light); margin-bottom: 1.5rem;
+      opacity: 0; animation: fadeUp .8s .2s forwards;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900; line-height: 1.1; color: #fff;
+      opacity: 0; animation: fadeUp .9s .4s forwards;
+    }
+    .hero-title em { font-style: italic; color: var(--gold-light); display: block; }
+    .hero-subtitle {
+      margin-top: 1.6rem;
+      font-family: 'Lora', serif; font-size: 1.05rem;
+      color: rgba(255,255,255,.72); max-width: 560px; margin-inline: auto;
+      opacity: 0; animation: fadeUp .9s .6s forwards;
+    }
+    .hero-divider {
+      width: 80px; height: 2px; margin: 2rem auto;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0; animation: fadeUp .6s .8s forwards;
+    }
+    .hero-meta {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .78rem; color: rgba(255,255,255,.5); letter-spacing: .06em;
+      opacity: 0; animation: fadeUp .6s 1s forwards;
+    }
+    .scroll-cue {
+      position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+      opacity: 0; animation: fadeUp .6s 1.4s forwards;
+    }
+    .scroll-cue span {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .65rem; letter-spacing: .15em; text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+    }
+    .scroll-arrow {
+      width: 20px; height: 20px;
+      border-right: 2px solid rgba(255,255,255,.3);
+      border-bottom: 2px solid rgba(255,255,255,.3);
+      transform: rotate(45deg);
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(4px)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+    /* LAYOUT */
+    .container { max-width: 780px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 2.5rem); }
+    .wide { max-width: 1100px; }
+    section { padding: 5rem 0; }
+    section + section { border-top: 1px solid var(--divider); }
+
+    .section-label {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .68rem; font-weight: 600;
+      letter-spacing: .22em; text-transform: uppercase;
+      color: var(--green-mid); margin-bottom: .8rem;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.7rem);
+      font-weight: 700; line-height: 1.2;
+      color: var(--green-dark); margin-bottom: 1.6rem;
+    }
+    .section-title em { color: var(--gold); font-style: italic; }
+
+    .dropcap::first-letter {
+      float: left; font-family: 'Playfair Display', serif;
+      font-size: 4.8rem; font-weight: 900;
+      line-height: .82; color: var(--green-dark);
+      margin-right: .15em; margin-top: .06em;
+    }
+
+    blockquote.pull {
+      border-left: 4px solid var(--gold);
+      padding: 1.2rem 0 1.2rem 2rem; margin: 2.5rem 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem; font-style: italic; color: var(--green-dark);
+    }
+    blockquote.pull cite {
+      display: block; margin-top: .6rem;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .75rem; font-style: normal;
+      letter-spacing: .1em; color: var(--muted);
+    }
+
+    /* FACTS BAND */
+    .facts-band { background: var(--green-dark); padding: 3.5rem 0; }
+    .facts-band .container { max-width: 1000px; }
+    .facts-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2rem; text-align: center;
+    }
+    .fact-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem; font-weight: 900; color: var(--gold-light); line-height: 1;
+    }
+    .fact-unit {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .8rem; color: rgba(255,255,255,.55);
+      letter-spacing: .1em; margin-top: .4rem;
+    }
+
+    /* ILLUS */
+    .illus-rice { float: right; margin: .5rem 0 1.5rem 2rem; width: clamp(160px,28%,220px); }
+    .illus-rice svg { width: 100%; height: auto; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 3rem; margin: 2rem 0; }
+    .timeline::before {
+      content: ''; position: absolute; left: 14px; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(to bottom, var(--green-mid), var(--gold));
+    }
+    .t-step { position: relative; margin-bottom: 2.5rem; }
+    .t-step:last-child { margin-bottom: 0; }
+    .t-dot {
+      position: absolute; left: -2.7rem; top: .2rem;
+      width: 26px; height: 26px; border-radius: 50%; background: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .7rem; font-weight: 700; color: var(--green-dark);
+      box-shadow: 0 0 0 4px var(--cream);
+    }
+    .t-step h4 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--green-dark); margin-bottom: .4rem; }
+    .t-step p { color: var(--muted); font-size: .95rem; }
+
+    /* CARDS */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
+    .card {
+      background: #fff; border: 1px solid var(--divider); overflow: hidden;
+      transition: transform .3s, box-shadow .3s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.1); }
+    .card-thumb { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; }
+    .card-body { padding: 1.5rem; }
+    .card-tag {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: .66rem; font-weight: 600;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--green-mid); margin-bottom: .6rem;
+    }
+    .card h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--green-dark); margin-bottom: .6rem; }
+    .card p { font-size: .9rem; color: var(--muted); line-height: 1.7; }
+
+    /* TERRACE */
+    .terrace-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; margin-top: 1rem; }
+
+    /* TABLE */
+    .season-table-wrap { overflow-x: auto; margin: 2rem 0; }
+    table { width: 100%; border-collapse: collapse; font-family: 'Be Vietnam Pro', sans-serif; font-size: .85rem; }
+    th { background: var(--green-dark); color: #fff; padding: .8rem 1rem; text-align: left; letter-spacing: .05em; font-weight: 500; }
+    td { padding: .75rem 1rem; border-bottom: 1px solid var(--divider); }
+    tr:nth-child(even) td { background: var(--parchment); }
+    tr:last-child td { border-bottom: none; }
+
+    /* PEST LIST */
+    .pest-list { list-style: none; margin: 1.5rem 0; }
+    .pest-list li { display: flex; gap: 1rem; align-items: flex-start; padding: .9rem 0; border-bottom: 1px solid var(--divider); font-size: .93rem; }
+    .pest-list li:last-child { border-bottom: none; }
+    .pest-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .pest-list strong { color: var(--green-dark); display: block; }
+
+    /* CULTURE */
+    .culture-strip { background: var(--parchment); padding: 4rem 0; }
+    .culture-strip .container { max-width: 860px; }
+
+    /* FOOTER */
+    footer {
+      background: var(--green-dark); color: rgba(255,255,255,.5);
+      text-align: center; padding: 3rem;
+      font-family: 'Be Vietnam Pro', sans-serif; font-size: .78rem; letter-spacing: .06em;
+    }
+    footer strong { color: var(--gold-light); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .ornament { display: block; text-align: center; color: var(--gold); font-size: 1.3rem; letter-spacing: .4em; margin: 2rem 0; }
+
+    #btt {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--green-dark); color: #fff; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; opacity: 0; pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
+    #btt.show { opacity: 1; pointer-events: auto; }
+    #btt:hover { transform: translateY(-3px); }
+
+    @media (max-width: 720px) {
+      .terrace-layout { grid-template-columns: 1fr; }
+      .illus-rice { float: none; width: 100%; margin: 1rem 0; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav>
+  <div class="nav-brand"><span>🌾</span> Lúa Việt Nam</div>
+  <ul class="nav-links">
+    <li><a href="#gioi-thieu">Giới thiệu</a></li>
+    <li><a href="#quy-trinh">Quy trình</a></li>
+    <li><a href="#loai-lua">Loại lúa</a></li>
+    <li><a href="#ruong-bac-thang">Ruộng bậc thang</a></li>
+    <li><a href="#van-hoa">Văn hóa</a></li>
+    <li><a href="#tuong-lai">Tương lai</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-pattern"></div>
+  <div class="rice-bg" id="riceStalkBg"></div>
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Nông nghiệp · Văn hóa · Di sản Việt Nam</p>
+    <h1 class="hero-title">
+      Hạt Lúa Vàng
+      <em>&amp; Hành Trình Ngàn Năm</em>
+    </h1>
+    <p class="hero-subtitle">
+      Khám phá câu chuyện về cây lúa — từ đồng bằng phì nhiêu đến những thửa ruộng bậc thang hùng vĩ — linh hồn của nền văn minh lúa nước Việt Nam suốt hàng nghìn năm lịch sử.
+    </p>
+    <div class="hero-divider"></div>
+    <p class="hero-meta">Bài nghiên cứu chuyên sâu &nbsp;·&nbsp; Nông nghiệp Việt Nam &nbsp;·&nbsp; 2024</p>
+  </div>
+  <div class="scroll-cue">
+    <span>Cuộn xuống</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</div>
+
+<!-- FACTS BAND -->
+<div class="facts-band">
+  <div class="container wide">
+    <div class="facts-grid" id="factsGrid">
+      <div class="fact-item reveal">
+        <div class="fact-num" data-target="7700" data-suffix="+">7700+</div>
+        <div class="fact-unit">năm lịch sử trồng lúa</div>
+      </div>
+      <div class="fact-item reveal">
+        <div class="fact-num" data-target="7.1" data-suffix="M" data-dec="1">7.1M</div>
+        <div class="fact-unit">ha đất canh tác lúa</div>
+      </div>
+      <div class="fact-item reveal">
+        <div class="fact-num" data-target="3" data-suffix=" hàng đầu">#3</div>
+        <div class="fact-unit">nước xuất khẩu gạo thế giới</div>
+      </div>
+      <div class="fact-item reveal">
+        <div class="fact-num" data-target="43" data-suffix="M+">43M+</div>
+        <div class="fact-unit">tấn lúa sản xuất mỗi năm</div>
+      </div>
+      <div class="fact-item reveal">
+        <div class="fact-num" data-target="200" data-suffix="+">200+</div>
+        <div class="fact-unit">giống lúa đang canh tác</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<section id="gioi-thieu">
+  <div class="container">
+    <p class="section-label reveal">Phần 01 — Tổng quan</p>
+    <h2 class="section-title reveal">Cây Lúa — <em>Hồn Của Đất Việt</em></h2>
+
+    <div class="illus-rice reveal">
+      <svg viewBox="0 0 200 310" xmlns="http://www.w3.org/2000/svg">
+        <line x1="100" y1="298" x2="100" y2="65" stroke="#4A7A30" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M100 210 Q60 178 40 152" stroke="#7DB85A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M100 210 Q140 178 160 155" stroke="#7DB85A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M100 162 Q55 135 35 108" stroke="#7DB85A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M100 162 Q145 135 165 110" stroke="#7DB85A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="100" cy="65" rx="4" ry="9.5" fill="#C8973A" transform="rotate(-8,100,65)"/>
+        <ellipse cx="93" cy="80" rx="3.5" ry="8.5" fill="#C8973A" transform="rotate(-18,93,80)"/>
+        <ellipse cx="107" cy="78" rx="3.5" ry="8.5" fill="#C8973A" transform="rotate(14,107,78)"/>
+        <ellipse cx="87" cy="92" rx="3.2" ry="8" fill="#E8C06A" transform="rotate(-24,87,92)"/>
+        <ellipse cx="113" cy="90" rx="3.2" ry="8" fill="#E8C06A" transform="rotate(20,113,90)"/>
+        <ellipse cx="95" cy="102" rx="3" ry="7.5" fill="#C8973A" transform="rotate(-12,95,102)"/>
+        <ellipse cx="105" cy="100" rx="3" ry="7.5" fill="#C8973A" transform="rotate(10,105,100)"/>
+        <ellipse cx="100" cy="112" rx="3" ry="7" fill="#E8C06A" transform="rotate(0,100,112)"/>
+        <path d="M100 298 Q80 290 68 276" stroke="#5C3D1E" stroke-width="1.5" fill="none" opacity=".5"/>
+        <path d="M100 298 Q120 290 132 275" stroke="#5C3D1E" stroke-width="1.5" fill="none" opacity=".5"/>
+        <path d="M100 298 Q95 286 88 268" stroke="#5C3D1E" stroke-width="1" fill="none" opacity=".35"/>
+      </svg>
+    </div>
+
+    <p class="dropcap reveal">
+      Cây lúa (<em>Oryza sativa</em>) không chỉ là cây lương thực — đây là linh hồn của nền văn minh lúa nước Việt Nam trải dài hơn bảy nghìn năm lịch sử. Từ những vùng đồng bằng châu thổ phì nhiêu đến những triền núi cao nguyên hùng vĩ, cây lúa đã gắn bó mật thiết với từng phong tục tập quán, từng bữa cơm gia đình, từng lễ hội dân gian của người Việt.
+    </p>
+
+    <p class="reveal">
+      Theo các nhà khảo cổ học, những dấu tích trồng lúa sớm nhất ở Việt Nam được tìm thấy tại di chỉ Phùng Nguyên (Phú Thọ) có niên đại khoảng 3.500–4.000 năm trước Công nguyên. Phân tích gen học cho thấy người Việt đã tiếp xúc với văn hóa trồng lúa từ sớm qua các dòng chảy văn hóa từ lưu vực sông Dương Tử. Nhà nước Văn Lang — Âu Lạc xa xưa — đã xây dựng nền văn minh thịnh vượng trên nền tảng nông nghiệp lúa nước ở vùng đồng bằng sông Hồng.
+    </p>
+
+    <blockquote class="pull reveal">
+      "Ai ơi bưng bát cơm đầy — Dẻo thơm một hạt, đắng cay muôn phần."
+      <cite>— Ca dao Việt Nam</cite>
+    </blockquote>
+
+    <p class="reveal">
+      Việt Nam hiện là một trong những quốc gia xuất khẩu gạo hàng đầu thế giới, với sản lượng hàng chục triệu tấn mỗi năm. Hai vùng trọng điểm là Đồng bằng sông Cửu Long (ĐBSCL) — "vựa lúa" của cả nước — và Đồng bằng sông Hồng ở miền Bắc, đóng góp phần lớn vào tổng sản lượng quốc gia. Ngoài ra, các vùng trung du và miền núi cũng có những mô hình canh tác lúa độc đáo mang bản sắc riêng của từng dân tộc.
+    </p>
+
+    <span class="ornament reveal">✦ ✦ ✦</span>
+
+    <h3 style="font-family:'Playfair Display',serif;color:var(--green-dark);font-size:1.4rem;margin-bottom:1rem;" class="reveal">Đặc điểm sinh học của cây lúa</h3>
+
+    <p class="reveal">
+      Lúa thuộc họ Hòa thảo (<em>Poaceae</em>), là cây thân thảo một năm, chiều cao dao động từ 0,6 m đến 1,5 m tùy giống. Bộ rễ chùm phát triển mạnh, thích nghi với điều kiện ngập nước — đây là ưu thế tiến hóa giúp lúa chiếm lĩnh vùng đồng bằng lầy lội mà nhiều cây trồng khác không thể tồn tại. Thân rỗng có nhiều đốt, từ thân chính mọc ra các nhánh (chồi). Lá hình dải hẹp, mặt trên có lông ráp đặc trưng.
+    </p>
+
+    <p class="reveal">
+      Cây lúa cần bốn yếu tố cơ bản để sinh trưởng tốt: nhiệt độ ấm (22–30°C tối ưu), nước (lúa nước cần ngập liên tục 5–10 cm), đất phù sa hoặc đất chua nhiều mùn, và ánh sáng đủ để quang hợp hiệu quả. Thời gian sinh trưởng từ khi gieo đến thu hoạch thường từ 90–150 ngày tùy giống và điều kiện canh tác. Chu kỳ sinh trưởng chia làm 3 giai đoạn chính: sinh trưởng dinh dưỡng (đẻ nhánh), sinh trưởng sinh thực (làm đòng–trổ bông), và giai đoạn chín (vào chắc–chín hoàn toàn).
+    </p>
+  </div>
+</section>
+
+<!-- QUY TRÌNH LÚA NƯỚC -->
+<section id="quy-trinh">
+  <div class="container">
+    <p class="section-label reveal">Phần 02 — Canh tác đồng bằng</p>
+    <h2 class="section-title reveal">Quy Trình Trồng <em>Lúa Nước</em></h2>
+
+    <p class="reveal">
+      Lúa nước — loại hình canh tác đặc trưng nhất của Việt Nam — trải qua một vòng sinh trưởng kỳ diệu từ hạt giống đến bông lúa chín vàng. Quy trình được chia thành nhiều giai đoạn kỹ thuật đòi hỏi kinh nghiệm truyền đời và sự hòa hợp với thiên nhiên. Dưới đây là quy trình hoàn chỉnh được áp dụng tại các vùng đồng bằng lớn của Việt Nam.
+    </p>
+
+    <div class="timeline reveal">
+      <div class="t-step">
+        <div class="t-dot">1</div>
+        <h4>🌱 Chọn giống &amp; ngâm ủ hạt (Ngày 1–3)</h4>
+        <p>Chọn hạt giống chất lượng cao, sàng lọc loại bỏ hạt lép bằng cách ngâm trong nước muối loãng — hạt nổi lên là hạt lép cần loại bỏ. Ngâm hạt trong nước ấm (32–35°C) khoảng 24–36 giờ cho hạt hút nước đầy đủ. Sau đó ủ trong bao tải ẩm từ 36–48 giờ cho đến khi mầm trắng nảy ra dài 1–2 mm là đạt yêu cầu. Nhiệt độ ủ lý tưởng là 28–32°C.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">2</div>
+        <h4>🌾 Chuẩn bị đất &amp; gieo mạ (Ngày 3–25)</h4>
+        <p>Làm dầm ruộng mạ: cày bừa kỹ, bón lót phân hữu cơ và vôi để cân bằng pH đất về mức 5,5–6,5. Gieo hạt đã ủ lên luống mạ đã được san phẳng và giữ ẩm vừa đủ. Chăm sóc mạ: tưới nước điều độ theo nguyên tắc "khô-ẩm xen kẽ", bón phân đạm nhẹ sau 7–10 ngày, phòng trừ sâu đất giai đoạn đầu bằng thuốc sinh học.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">3</div>
+        <h4>🚜 Làm đất ruộng cấy (Song song với giai đoạn mạ)</h4>
+        <p>Trong khi mạ phát triển, ruộng chính được cày sâu 15–20 cm, bừa nhuyễn để phá vỡ cấu trúc đất cứng và vùi lấp cỏ dại. Đánh rãnh thoát nước, bón lót phân chuồng hoai mục hoặc phân NPK theo tỷ lệ phù hợp với loại đất. Dâng nước lên mức 5–8 cm. San phẳng mặt ruộng bằng bàn trang kéo bằng máy để đảm bảo đồng đều mực nước.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">4</div>
+        <h4>🌿 Cấy lúa / Sạ hàng (Ngày 25–30)</h4>
+        <p>Nhổ mạ nhẹ nhàng, rũ bùn, buộc thành bó nhỏ. Cấy theo hàng thẳng, khoảng cách 20×20 cm hoặc 20×25 cm tùy giống. Mỗi bụi cấy 2–4 dảnh mạ, cấy sâu 2–3 cm, không cấy ngả. Tại ĐBSCL hiện nay phổ biến kỹ thuật sạ hàng bằng công cụ sạ hàng và sạ lan — tiết kiệm giống 30–40% và giảm chi phí lao động đáng kể so với cấy truyền thống.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">5</div>
+        <h4>💧 Quản lý nước &amp; phân bón (Ngày 30–90)</h4>
+        <p>Giai đoạn đẻ nhánh (30–50 ngày): duy trì nước mức 3–5 cm, bón thúc đạm lần 1 (urê + DAP). Giai đoạn làm đòng (50–70 ngày): bón thúc kali + lân, duy trì mực nước ổn định. Giai đoạn trổ bông: áp dụng kỹ thuật tưới ngập-khô xen kẽ (AWD) giúp tiết kiệm 30% nước, giảm phát thải khí CH4, đồng thời kích thích rễ phát triển và hạn chế đổ ngã.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">6</div>
+        <h4>🐛 Phòng trừ sâu bệnh tổng hợp (Liên tục)</h4>
+        <p>Thăm đồng ít nhất 2 lần/tuần để phát hiện rầy nâu, sâu cuốn lá, bệnh đạo ôn, bệnh khô vằn. Áp dụng quản lý dịch hại tổng hợp (IPM): ưu tiên biện pháp sinh học (thiên địch, bẫy đèn, thuốc sinh học), hạn chế thuốc hóa học theo nguyên tắc "4 đúng" — đúng thuốc, đúng lúc, đúng liều, đúng cách. Ghi chép nhật ký đồng ruộng để theo dõi và điều chỉnh kịp thời.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">7</div>
+        <h4>🌾 Thu hoạch &amp; sau thu hoạch (Ngày 90–120)</h4>
+        <p>Lúa chín khi 85–90% số hạt trên bông đã vàng, hạt cứng và chắc. Rút nước ruộng trước 7–10 ngày để mặt ruộng khô, thuận tiện cho máy gặt đập liên hợp. Thu hoạch đúng thời điểm tránh hạt rụng và nứt gạo. Sau thu hoạch, phơi ngay hoặc sấy bằng lò sấy tĩnh để giảm độ ẩm xuống dưới 14% trước khi bảo quản trong kho thoáng mát hoặc đóng bao xuất khẩu.</p>
+      </div>
+    </div>
+
+    <h3 style="font-family:'Playfair Display',serif;color:var(--green-dark);font-size:1.35rem;margin:2.5rem 0 1rem;" class="reveal">Lịch thời vụ tại các vùng trồng lúa</h3>
+
+    <div class="season-table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Vùng / Vụ lúa</th>
+            <th>Vụ Đông Xuân</th>
+            <th>Vụ Hè Thu</th>
+            <th>Vụ Mùa / Thu Đông</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Đồng bằng sông Hồng</strong></td>
+            <td>Tháng 11 – tháng 5</td>
+            <td>–</td>
+            <td>Tháng 6 – tháng 10</td>
+          </tr>
+          <tr>
+            <td><strong>Miền Trung (Bắc &amp; Nam)</strong></td>
+            <td>Tháng 12 – tháng 4</td>
+            <td>Tháng 4 – tháng 8</td>
+            <td>Tháng 8 – tháng 12</td>
+          </tr>
+          <tr>
+            <td><strong>Tây Nguyên</strong></td>
+            <td>Tháng 11 – tháng 4</td>
+            <td>Tháng 5 – tháng 10</td>
+            <td>–</td>
+          </tr>
+          <tr>
+            <td><strong>Đồng bằng sông Cửu Long</strong></td>
+            <td>Tháng 11 – tháng 3</td>
+            <td>Tháng 3 – tháng 7</td>
+            <td>Tháng 7 – tháng 11</td>
+          </tr>
+          <tr>
+            <td><strong>Trung du miền núi phía Bắc</strong></td>
+            <td>Tháng 1 – tháng 5</td>
+            <td>–</td>
+            <td>Tháng 5 – tháng 10</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CÁC LOẠI LÚA -->
+<section id="loai-lua">
+  <div class="container">
+    <p class="section-label reveal">Phần 03 — Đa dạng giống</p>
+    <h2 class="section-title reveal">Các <em>Loại Lúa</em> Đặc Sắc Của Việt Nam</h2>
+
+    <p class="reveal">
+      Với địa hình đa dạng từ đồng bằng, trung du đến miền núi cao, Việt Nam sở hữu một kho báu di truyền nông nghiệp đặc sắc với hàng trăm giống lúa bản địa quý hiếm bên cạnh các giống năng suất cao được lai tạo hiện đại. Mỗi vùng đất, mỗi dân tộc đều có những giống lúa riêng phản ánh điều kiện sinh thái và văn hóa độc đáo.
+    </p>
+
+    <div class="cards-grid">
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#e8f5e1,#c8e6c9)">🌾</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa nước — Đồng bằng</div>
+          <h3>Lúa IR50404</h3>
+          <p>Giống lúa năng suất cao phổ biến nhất ĐBSCL. Chu kỳ 90–100 ngày, kháng rầy khá tốt, năng suất 6–8 tấn/ha. Gạo hạt dài, cơm khô — chủ yếu phục vụ xuất khẩu sang thị trường châu Phi và Trung Đông.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#fff8e1,#ffecb3)">✨</div>
+        <div class="card-body">
+          <div class="card-tag">Đặc sản — Thơm dẻo thế giới</div>
+          <h3>Lúa ST25</h3>
+          <p>Do kỹ sư Hồ Quang Cua chọn tạo tại Sóc Trăng, đạt giải "gạo ngon nhất thế giới" năm 2019 tại Philippines. Hạt gạo dài, thơm đặc trưng mùi lá dứa, cơm mềm dẻo. Giá xuất khẩu cao nhất Việt Nam.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#f3e5f5,#e1bee7)">🍚</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa nếp — Đặc sản Bắc Bộ</div>
+          <h3>Nếp Cái Hoa Vàng</h3>
+          <p>Giống nếp truyền thống miền Bắc với hạt to bầu, cơm dẻo ngọt tự nhiên, thơm hương đặc trưng. Được dùng làm xôi cúng, bánh chưng Tết, cốm làng Vòng (Hà Nội) nổi tiếng khắp nơi.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#ffe8e0,#ffccb0)">🏔️</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa nương — Miền núi</div>
+          <h3>Lúa Nương Tẻ Đỏ Tây Bắc</h3>
+          <p>Giống lúa cạn bản địa của đồng bào Thái, Mường ở Tây Bắc. Hạt gạo đỏ hồng, giàu anthocyanin và khoáng chất. Trồng không cần ngập nước, chịu hạn và chịu lạnh tốt, canh tác theo hình thức nương rẫy.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb)">🌊</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa mùa nổi — Đặc biệt</div>
+          <h3>Lúa Nổi An Giang</h3>
+          <p>Giống lúa cổ thích nghi đặc biệt với lũ ĐBSCL — thân vươn theo mực nước lũ lên đến 4–5 m. Năng suất thấp (2–3 tấn/ha) nhưng gạo rất ngon, hạt dài đỏ. Đây là báu vật di truyền đang dần hiếm gặp.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#e8f5e1,#dcedc8)">🎋</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa bậc thang — Đặc sản núi</div>
+          <h3>Lúa Séng Cù Mường Khương</h3>
+          <p>Đặc sản Lào Cai, trồng trên ruộng bậc thang ở độ cao 1.000–1.500 m. Hạt ngắn mập, cơm thơm dẻo, ngọt bùi đặc trưng nhờ biên độ nhiệt lớn ngày–đêm vùng cao. Được bảo hộ chỉ dẫn địa lý quốc gia.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#fce4ec,#f8bbd0)">💎</div>
+        <div class="card-body">
+          <div class="card-tag">Gạo đặc sản — Hương thơm</div>
+          <h3>Lúa Khao Dawk Mali 105</h3>
+          <p>Giống lúa thơm nguồn gốc Thái Lan nhưng được địa phương hóa thành công ở vùng Tây Bắc. Hạt gạo trắng trong, thơm nhẹ kiểu jasmine, cơm mềm dẻo. Hiện được xuất khẩu sang các thị trường khó tính như Nhật, EU.</p>
+        </div>
+      </div>
+      <div class="card reveal">
+        <div class="card-thumb" style="background:linear-gradient(135deg,#f1f8e9,#c5e1a5)">🌿</div>
+        <div class="card-body">
+          <div class="card-tag">Lúa hữu cơ — Bền vững</div>
+          <h3>Lúa Hữu Cơ Trà Vinh</h3>
+          <p>Mô hình canh tác lúa hữu cơ kết hợp nuôi tôm càng xanh (lúa–tôm) đang phát triển mạnh ở ĐBSCL. Không dùng phân hóa học, thuốc trừ sâu tổng hợp. Gạo đạt chứng nhận organic, giá cao gấp 2–3 lần lúa thường.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RUỘNG BẬC THANG -->
+<section id="ruong-bac-thang">
+  <div class="container">
+    <p class="section-label reveal">Phần 04 — Kiệt tác ruộng đồi</p>
+    <h2 class="section-title reveal">Ruộng Bậc Thang — <em>Kỳ Quan Của Người Việt</em></h2>
+
+    <div class="terrace-layout">
+      <div>
+        <p class="reveal">
+          Ruộng bậc thang (<em>terraced rice fields</em>) là hệ thống canh tác lúa đặc biệt được khắc tạo từ bàn tay con người trên sườn núi dốc đứng. Đây là sáng tạo vĩ đại của các dân tộc thiểu số như H'Mông, Dao, Tày, Thái ở vùng Tây Bắc và Đông Bắc Việt Nam — tồn tại suốt hàng trăm năm và được UNESCO công nhận là Di sản Văn hóa Phi vật thể tiêu biểu của nhân loại.
+        </p>
+        <p class="reveal" style="margin-top:1rem;">
+          Ruộng bậc thang Mù Cang Chải (Yên Bái), Hoàng Su Phì (Hà Giang), và Sa Pa (Lào Cai) là những điểm đến nổi tiếng nhất, thu hút hàng triệu du khách mỗi năm. Đặc biệt, mùa lúa chín vào tháng 9–10 tạo ra khung cảnh tuyệt đẹp với những thửa ruộng vàng óng xếp tầng tầng lớp lớp trên triền núi — một trong những cảnh quan nông nghiệp đẹp nhất châu Á được nhiều tạp chí quốc tế bình chọn.
+        </p>
+        <p class="reveal" style="margin-top:1rem;">
+          Hệ thống thủy lợi truyền thống (<em>mương-phai-lái-lìn</em>) của người Thái đen ở Tây Bắc là kỳ công kỹ thuật cổ đại: hệ thống mương đào bằng tay dẫn nước từ khe suối trên núi, phân nhánh qua nhiều tầng ruộng bậc thang theo nguyên lý bình thông nhau, tưới tiêu mà không cần điện hay bơm cơ học.
+        </p>
+      </div>
+      <div class="reveal">
+        <svg viewBox="0 0 360 280" xmlns="http://www.w3.org/2000/svg" style="border:1px solid var(--divider);background:#f5f0e8;display:block;width:100%;">
+          <defs>
+            <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b8d4e8"/>
+              <stop offset="100%" stop-color="#ddeeff"/>
+            </linearGradient>
+          </defs>
+          <rect width="360" height="280" fill="url(#skyg)"/>
+          <polygon points="0,140 120,40 240,80 360,30 360,140" fill="#4a6a32" opacity=".5"/>
+          <polygon points="0,155 80,70 200,100 360,50 360,155" fill="#3d5c25" opacity=".7"/>
+          <path d="M-10,262 Q60,232 130,222 Q210,212 370,232 L370,262 Z" fill="#c8a830"/>
+          <path d="M-10,242 Q40,212 105,202 Q185,192 370,212 L370,242 Z" fill="#b8981f"/>
+          <path d="M-10,222 Q25,192 85,182 Q165,170 370,190 L370,222 Z" fill="#e8c840" opacity=".9"/>
+          <path d="M5,202 Q15,172 65,162 Q145,148 370,168 L370,202 Z" fill="#c8a830" opacity=".9"/>
+          <path d="M25,180 Q45,155 85,145 Q155,132 370,148 L370,180 Z" fill="#b8981f" opacity=".85"/>
+          <path d="M55,158 Q72,135 115,124 Q175,112 370,128 L370,158 Z" fill="#c8a830" opacity=".8"/>
+          <path d="M-10,242 Q40,212 105,202 Q185,192 370,212 L370,218 Q185,198 105,208 Q40,218 -10,248 Z" fill="#90b8d0" opacity=".25"/>
+          <path d="M5,202 Q15,172 65,162 Q145,148 370,168 L370,174 Q145,154 65,168 Q15,178 5,208 Z" fill="#90b8d0" opacity=".2"/>
+          <rect x="32" y="154" width="18" height="12" fill="#8b6040" rx="1"/>
+          <polygon points="32,154 50,154 41,144" fill="#a07050"/>
+          <rect x="35" y="157" width="5" height="9" fill="#5c3d1e"/>
+          <rect x="36" y="166" width="6" height="8" fill="#6b4a2a"/>
+          <circle cx="275" cy="132" r="9" fill="#2d4a1e"/>
+          <circle cx="290" cy="127" r="7" fill="#3a5c28"/>
+          <circle cx="263" cy="129" r="6" fill="#254020"/>
+          <circle cx="285" cy="138" r="5" fill="#2d4a1e"/>
+          <text x="180" y="272" text-anchor="middle" font-family="Georgia,serif" font-size="9.5" fill="#5c3d1e" opacity=".75" font-style="italic">Ruộng bậc thang — Tây Bắc Việt Nam</text>
+        </svg>
+      </div>
+    </div>
+
+    <h3 style="font-family:'Playfair Display',serif;color:var(--green-dark);font-size:1.35rem;margin:2.5rem 0 1rem;" class="reveal">Quy trình trồng lúa trên ruộng bậc thang</h3>
+
+    <p class="reveal">
+      Canh tác lúa trên ruộng bậc thang là một trong những hình thức nông nghiệp đòi hỏi nhiều lao động nhất và phụ thuộc sâu sắc vào tri thức bản địa truyền đời. Mỗi thao tác đều được thực hiện với sự tôn trọng thiên nhiên và sự gắn kết cộng đồng sâu sắc.
+    </p>
+
+    <div class="timeline reveal" style="margin-top:1.5rem;">
+      <div class="t-step">
+        <div class="t-dot">1</div>
+        <h4>🏔️ Tu bổ bờ thửa &amp; mương nước (Tháng 2–4)</h4>
+        <p>Sau mùa đông lạnh giá, người dân tập trung tu bổ lại các bờ thửa bị xói lở do mưa lũ và đất trượt. Đào đắp đất bằng cuốc tay, gia cố bờ đá, kiểm tra và khơi thông toàn bộ hệ thống mương dẫn nước từ suối núi. Đây là công việc tập thể — cả bản cùng nhau làm theo nguyên tắc đổi công.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">2</div>
+        <h4>💧 Dẫn nước vào ruộng &amp; cày đất (Tháng 4–5)</h4>
+        <p>Mở cống dẫn nước từ khe suối trên núi vào ruộng đầu nguồn, nước tự chảy xuống các bậc phía dưới theo nguyên lý liên thông. Cày bằng trâu hoặc máy nhỏ cỡ 6–12 mã lực phù hợp địa hình. Do diện tích thửa hẹp và dốc, phần lớn các công đoạn vẫn phải làm thủ công bằng cuốc, bừa tay.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">3</div>
+        <h4>🌱 Gieo mạ &amp; cấy thủ công (Tháng 5–6)</h4>
+        <p>Gieo mạ trên khoảnh ruộng phẳng nhất hoặc trong vườn nhà trước 25–30 ngày. Kỹ thuật cấy hoàn toàn thủ công do ruộng nhỏ và hẹp không phù hợp cơ giới hóa. Người dân cấy sâu hơn so với đồng bằng (3–5 cm) để cây đứng vững trên đất dốc có nước chảy. Mật độ cấy thưa hơn (25×30 cm) để tận dụng khả năng đẻ nhánh mạnh của giống lúa địa phương.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">4</div>
+        <h4>🌿 Chăm sóc mùa mưa (Tháng 6–9)</h4>
+        <p>Mùa mưa vừa cung cấp nước tự nhiên vừa là thách thức — lũ quét và sạt lở có thể phá hủy bờ thửa. Người dân thường xuyên tuần tra bờ ruộng sau mỗi cơn mưa lớn, sửa chữa ngay các điểm vỡ. Bón phân hữu cơ (phân xanh, tro bếp, phân chuồng ủ hoai) — hầu hết các gia đình không dùng phân hóa học để bảo vệ đất dốc khỏi xói mòn và duy trì chất lượng gạo đặc sản.</p>
+      </div>
+      <div class="t-step">
+        <div class="t-dot">5</div>
+        <h4>🌾 Thu hoạch thủ công &amp; lễ hội cơm mới (Tháng 9–10)</h4>
+        <p>Thu hoạch hoàn toàn thủ công bằng liềm, bó lúa và vác về nhà trên những con đường núi dốc đứng. Đây là thời điểm cả bản huy động mọi người cùng nhau thu hoạch theo hình thức đổi công truyền thống. Sau thu hoạch, lễ "mừng cơm mới" được tổ chức linh đình — cả gia đình và họ hàng quây quần thưởng thức cơm mới, rượu cần — nét đẹp văn hóa cộng đồng đặc sắc không thể thiếu.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SÂU BỆNH -->
+<section>
+  <div class="container">
+    <p class="section-label reveal">Phần 05 — Thách thức canh tác</p>
+    <h2 class="section-title reveal">Sâu Bệnh Hại Lúa &amp; <em>Biện Pháp Phòng Trừ</em></h2>
+
+    <p class="reveal">
+      Trong suốt vòng đời của cây lúa, người nông dân phải đối mặt với hàng loạt tác nhân sinh học gây hại từ côn trùng, nấm bệnh đến cỏ dại và động vật phá hoại. Nhận biết sớm và phòng trừ kịp thời là yếu tố then chốt bảo vệ thành quả lao động suốt cả vụ mùa.
+    </p>
+
+    <ul class="pest-list reveal">
+      <li>
+        <span class="pest-icon">🦗</span>
+        <div>
+          <strong>Rầy nâu (Nilaparvata lugens) — Nguy hiểm nhất</strong>
+          Chích hút nhựa cây gây "cháy rầy" — ruộng lúa khô cháy từng mảng. Mật độ cao có thể làm mất trắng cả vụ. Phòng trừ: gieo sạ đúng thời vụ tập trung (cùng bản đồ dịch), trồng giống kháng rầy, bảo vệ thiên địch (nhện, bọ rùa), sử dụng bẫy đèn, phun thuốc khi mật độ vượt 1.500 con/m² ở giai đoạn đẻ nhánh.
+        </div>
+      </li>
+      <li>
+        <span class="pest-icon">🐛</span>
+        <div>
+          <strong>Sâu cuốn lá nhỏ (Cnaphalocrocis medinalis)</strong>
+          Ấu trùng nhả tơ cuốn lá thành ống, gặm phần xanh bên trong làm lá trắng bạc giống "mạ bạc". Tác hại nặng nhất ở giai đoạn đẻ nhánh – làm đòng. Phòng: bảo vệ và tăng cường thiên địch (ong ký sinh, bọ xít mù xanh), phun thuốc sinh học Bacillus thuringiensis (Bt) khi mật độ cao.
+        </div>
+      </li>
+      <li>
+        <span class="pest-icon">🍄</span>
+        <div>
+          <strong>Bệnh đạo ôn (Pyricularia oryzae)</strong>
+          Nấm gây vết bệnh hình thoi màu nâu xám trên lá (đạo ôn lá) hoặc thắt đen cổ bông làm bông lúa bạc trắng không hạt (đạo ôn cổ bông). Điều kiện thuận lợi: trời mát (20–25°C), ẩm độ cao, sương mù nhiều. Phòng: bón đạm cân đối không thừa, phun thuốc Tricyclazole trước khi lúa trổ bông 5–7 ngày.
+        </div>
+      </li>
+      <li>
+        <span class="pest-icon">🌿</span>
+        <div>
+          <strong>Bệnh khô vằn (Rhizoctonia solani)</strong>
+          Nấm gây vết bệnh vằn vèo màu nâu xám có viền nâu đậm trên bẹ lá, leo dần lên cao trong điều kiện cấy dày và ẩm ướt. Phòng: cấy mật độ hợp lý, vệ sinh đồng ruộng sau thu hoạch (thu gom rơm rạ), phun Validamycin khi bệnh phát sinh.
+        </div>
+      </li>
+      <li>
+        <span class="pest-icon">🐌</span>
+        <div>
+          <strong>Ốc bươu vàng (Pomacea canaliculata)</strong>
+          Dịch hại xâm lấn nguy hiểm, cắn phá mạ non và cây lúa mới cấy trong vòng 1–3 tuần đầu. Xuất hiện nhiều ở ĐBSCL và đồng bằng sông Hồng. Phòng trừ: đặt lưới ngăn ốc vào ruộng qua cống tưới tiêu, nhặt ốc và trứng thủ công, thả vịt vào ruộng sau khi lúa đứng cái.
+        </div>
+      </li>
+      <li>
+        <span class="pest-icon">🐀</span>
+        <div>
+          <strong>Chuột hại lúa</strong>
+          Gây thiệt hại lớn ở giai đoạn làm đòng và chín, ước tính mất 5–10% sản lượng quốc gia mỗi năm. Cắn đứt dảnh lúa, ăn hạt. Phòng trừ: đặt bẫy cơ học hàng loạt, hun khói hang, dùng bẫy dính, tổ chức diệt chuột tập thể cùng thời điểm cả cánh đồng — diệt chuột đơn lẻ không hiệu quả.
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- VĂN HÓA -->
+<div class="culture-strip" id="van-hoa">
+  <div class="container">
+    <p class="section-label reveal">Phần 06 — Văn hóa &amp; Tâm linh</p>
+    <h2 class="section-title reveal">Lúa Trong <em>Đời Sống Tâm Hồn</em> Người Việt</h2>
+
+    <p class="dropcap reveal">
+      Nếu lúa nuôi sống thể xác, thì văn hóa lúa nước nuôi dưỡng tâm hồn người Việt. Từ lễ hội dân gian, ẩm thực đến tín ngưỡng thờ cúng, cây lúa thấm sâu vào mọi ngõ ngách của đời sống tinh thần dân tộc qua hàng nghìn năm.
+    </p>
+
+    <blockquote class="pull reveal">
+      "Cơm ăn mấy bữa mấy thì — Cái thương cái nhớ, cái sầu cái đau."
+      <cite>— Thơ dân gian Việt Nam</cite>
+    </blockquote>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Lễ hội liên quan đến lúa</strong> xuất hiện quanh năm trong lịch nông nghiệp: Lễ hạ điền (cày ruộng đầu xuân), Lễ thượng điền (cúng cơm mới sau thu hoạch), Tết Cơm Mới của đồng bào Tây Nguyên, Lễ Cầu An của người Chăm, và hàng chục lễ hội địa phương gắn với cầu mùa màng bội thu. Tại nhiều vùng, người già còn thực hành nghi lễ "gọi hồn lúa" trước ngày gặt — một tín ngưỡng nông nghiệp nguyên thủy đặc sắc.
+    </p>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Ẩm thực từ lúa gạo</strong> của Việt Nam phong phú bậc nhất thế giới: từ cơm trắng hàng ngày, bún, phở, bánh cuốn đến cốm làng Vòng (Hà Nội), bánh chưng ngày Tết, xôi gấc đỏ trong đám cưới, bánh tét miền Nam, rượu cần của người dân tộc, bánh tráng miền Trung, bún bò Huế, hủ tiếu Nam Vang... mỗi món đều mang ký ức và hương vị riêng của một vùng đất.
+    </p>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Tín ngưỡng thờ Thần Lúa</strong> phổ biến ở nhiều dân tộc thiểu số. Người Ê Đê, Ba Na, Chăm tin rằng mỗi cây lúa có linh hồn (hồn lúa), và người trồng phải thực hiện các nghi lễ gọi hồn lúa về nhà trước khi gặt để hồn lúa không bỏ đi. Người Kinh xưa thờ "Thần Nông" — vị thần dạy con người cày cấy. Ngay cả hình ảnh bông lúa cũng xuất hiện trên quốc huy Việt Nam — minh chứng cho tầm quan trọng thiêng liêng của cây lúa trong ý thức dân tộc.
+    </p>
+
+    <span class="ornament reveal">❧ ❧ ❧</span>
+
+    <h3 style="font-family:'Playfair Display',serif;color:var(--green-dark);font-size:1.35rem;margin-bottom:1rem;" class="reveal">Ca dao, tục ngữ — Kho báu tri thức nông nghiệp</h3>
+
+    <p class="reveal">
+      Kho tàng ca dao tục ngữ Việt Nam ghi lại tinh hoa kinh nghiệm trồng lúa qua nhiều thế hệ: <em>"Nhất nước, nhì phân, tam cần, tứ giống"</em> — bốn yếu tố quan trọng xếp theo thứ tự ưu tiên, trong đó nước là quan trọng nhất. <em>"Người đẹp vì lụa, lúa tốt vì phân"</em> nhấn mạnh vai trò phân bón. <em>"Tháng Chín đôi mươi, tháng Mười mồng năm"</em> — lịch nông vụ dân gian chỉ ngày gieo mạ vụ mùa miền Bắc. <em>"Được mùa chớ phụ ngô khoai"</em> nhắc nhở sự trân trọng mọi loại lương thực, không phí phạm khi no đủ.
+    </p>
+  </div>
+</div>
+
+<!-- TƯƠNG LAI -->
+<section id="tuong-lai">
+  <div class="container">
+    <p class="section-label reveal">Phần 07 — Tương lai &amp; Bền vững</p>
+    <h2 class="section-title reveal">Nông Nghiệp Lúa Gạo <em>Thế Kỷ 21</em></h2>
+
+    <p class="reveal">
+      Ngành lúa gạo Việt Nam đang đứng trước ngưỡng cửa chuyển đổi lớn nhất trong lịch sử. Biến đổi khí hậu, nước biển dâng, xâm nhập mặn vào ĐBSCL đang đặt ra những thách thức chưa từng có. Song song đó, cách mạng khoa học công nghệ mở ra những cơ hội mới đầy hứa hẹn cho người nông dân Việt Nam.
+    </p>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Nông nghiệp thông minh</strong> (Smart Agriculture) đang dần được ứng dụng rộng rãi: máy bay không người lái (drone) phun thuốc và bón phân chính xác theo bản đồ dinh dưỡng đất; cảm biến IoT theo dõi độ ẩm đất, mực nước và thời tiết trong thời gian thực; trí tuệ nhân tạo dự đoán dịch bệnh sớm từ ảnh chụp vệ tinh và dữ liệu khí hậu. Chi phí đầu vào giảm 20–30% trong khi năng suất và chất lượng tăng lên.
+    </p>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Đề án 1 triệu ha lúa chất lượng cao</strong> của Chính phủ Việt Nam (2023–2030) nhằm xây dựng vùng sản xuất lúa gạo bền vững ở ĐBSCL: giảm phát thải khí nhà kính từ trồng lúa (chiếm 48% phát thải nông nghiệp), giảm chi phí đầu vào, tăng giá trị gia tăng thông qua chứng nhận hữu cơ và truy xuất nguồn gốc bằng blockchain. Đây là tín hiệu tích cực cho sự chuyển đổi từ sản xuất số lượng sang chất lượng.
+    </p>
+
+    <p class="reveal">
+      <strong style="color:var(--green-dark)">Bảo tồn giống lúa bản địa</strong> là ưu tiên song hành. Ngân hàng gen cây trồng Quốc gia tại Hà Nội hiện lưu giữ hơn 4.000 mẫu giống lúa bản địa — kho báu di truyền quý giá cần được bảo vệ trước nguy cơ tuyệt chủng khi nông dân đại trà chuyển sang giống lai năng suất cao. Các chương trình bảo tồn ex-situ (ngân hàng hạt giống) và in-situ (tại ruộng cộng đồng) đang được triển khai tại nhiều địa phương.
+    </p>
+
+    <blockquote class="pull reveal">
+      "Giá trị của hạt gạo Việt không chỉ nằm ở chất lượng mà còn ở câu chuyện văn hóa, môi trường và con người đứng sau nó."
+      <cite>— Chiến lược phát triển nông nghiệp bền vững Việt Nam</cite>
+    </blockquote>
+
+    <p class="reveal">
+      Trong hành trình ấy, cây lúa vẫn sẽ tiếp tục là trái tim của đời sống nông thôn Việt Nam — không chỉ là lương thực, mà là bản sắc, là ký ức, là niềm tự hào của một dân tộc đã thuần hóa và yêu thương hạt vàng này suốt nghìn năm lịch sử. Mỗi bông lúa là một bài thơ, mỗi thửa ruộng là một trang sử, và mỗi bữa cơm là sợi dây nối liền quá khứ với tương lai của người Việt.
+    </p>
+
+    <span class="ornament reveal">✦ ✦ ✦</span>
+  </div>
+</section>
+
+<footer>
+  <div style="margin-bottom:.7rem;font-size:2rem;">🌾</div>
+  <p><strong>Lúa &amp; Hành Trình Trồng Lúa Tại Việt Nam</strong></p>
+  <p style="margin-top:.5rem;">Bài viết nghiên cứu chuyên sâu về nông nghiệp lúa nước Việt Nam · 2024</p>
+  <p style="margin-top:1rem;font-size:.72rem;opacity:.45;">
+    Tham khảo: Viện Lúa Đồng bằng sông Cửu Long · Bộ Nông nghiệp &amp; PTNT Việt Nam · FAO Vietnam · UNESCO · Ngân hàng gen cây trồng Quốc gia
+  </p>
+</footer>
+
+<button id="btt" aria-label="Quay lên đầu trang">↑</button>
+
+<script>
+  // Rice stalks hero
+  const bg = document.getElementById('riceStalkBg');
+  for (let i = 0; i < 70; i++) {
+    const d = document.createElement('div');
+    d.className = 'stalk';
+    bg.appendChild(d);
+  }
+
+  // Progress bar
+  const bar = document.getElementById('progress-bar');
+  const btt = document.getElementById('btt');
+
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    bar.style.width = (window.scrollY / total * 100) + '%';
+    btt.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+
+  btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const revObs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 55);
+        revObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => revObs.observe(el));
+
+  // Number counter animation
+  function animateNum(el, target, suffix, decimals, duration) {
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      const val = target * ease;
+      el.textContent = (decimals ? val.toFixed(decimals) : Math.round(val).toLocaleString('vi-VN')) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  const factsGrid = document.getElementById('factsGrid');
+  const factConfigs = [
+    { target: 7700, suffix: '+', dec: 0 },
+    { target: 7.1,  suffix: 'M', dec: 1 },
+    { target: 3,    suffix: ' hàng đầu', dec: 0, prefix: '#' },
+    { target: 43,   suffix: 'M+', dec: 0 },
+    { target: 200,  suffix: '+', dec: 0 },
+  ];
+  const factObs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      const nums = factsGrid.querySelectorAll('.fact-num');
+      nums.forEach((el, i) => {
+        const c = factConfigs[i];
+        if (!c) return;
+        setTimeout(() => {
+          const suf = c.prefix ? '' : c.suffix;
+          animateNum(el, c.target, suf, c.dec, 1600);
+          if (c.prefix) {
+            const orig = el.textContent;
+            const innerAnim = (now) => {
+              // prepend prefix after animation completes
+            };
+          }
+        }, i * 180);
+      });
+      factObs.disconnect();
+    }
+  }, { threshold: 0.4 });
+  if (factsGrid) factObs.observe(factsGrid);
+</script>
+</body>
+</html>
